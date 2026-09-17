@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Beat store</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#14110f; --panel:#1d1916; --panel-2:#252019; --line:#37302a;
+    --ink:#ede6df; --muted:#9a8f86; --accent:#e8a33d; --live:#7bc98c; --warn:#e0715c;
+    --radius:10px;
+  }
+  * { box-sizing:border-box }
+  body {
+    margin:0; background:var(--bg); color:var(--ink);
+    font:15px/1.5 Archivo, system-ui, -apple-system, sans-serif;
+    font-variant-numeric:tabular-nums;
+  }
+  a { color:var(--accent) }
+  header {
+    display:flex; align-items:baseline; gap:14px; flex-wrap:wrap;
+    padding:22px 28px; border-bottom:1px solid var(--line);
+  }
+  header h1 { font-size:19px; font-weight:600; margin:0; letter-spacing:-.01em }
+  header .store { color:var(--muted); font-size:13px }
+  nav { display:flex; gap:4px; padding:14px 28px 0; border-bottom:1px solid var(--line) }
+  nav button {
+    background:none; border:0; border-bottom:2px solid transparent; color:var(--muted);
+    font:inherit; font-weight:500; padding:8px 14px 12px; cursor:pointer;
+  }
+  nav button[aria-selected="true"] { color:var(--ink); border-bottom-color:var(--accent) }
+  nav button:focus-visible { outline:2px solid var(--accent); outline-offset:2px }
+  main { padding:28px; max-width:920px }
+  section[hidden] { display:none }
+  h2 { font-size:17px; font-weight:600; margin:0 0 4px }
+  .sub { color:var(--muted); font-size:14px; margin:0 0 22px }
+
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:20px; margin-bottom:16px }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px }
+  label { display:block; font-size:13px; color:var(--muted); margin-bottom:6px }
+  input[type=text], input[type=number], textarea, select {
+    width:100%; background:var(--bg); color:var(--ink); border:1px solid var(--line);
+    border-radius:8px; padding:10px 12px; font:inherit;
+  }
+  textarea { min-height:78px; resize:vertical }
+  input:focus, textarea:focus, select:focus { outline:2px solid var(--accent); outline-offset:1px; border-color:transparent }
+  input[type=file] { font-size:13px; color:var(--muted); width:100% }
+  input[type=file]::file-selector-button {
+    background:var(--panel-2); color:var(--ink); border:1px solid var(--line);
+    border-radius:6px; padding:7px 11px; font:inherit; font-size:13px; margin-right:10px; cursor:pointer;
+  }
+
+  .tier { border:1px solid var(--line); border-radius:var(--radius); padding:14px; margin-bottom:10px; background:var(--panel) }
+  .tier.on { border-color:var(--accent) }
+  .tier-head { display:flex; align-items:center; gap:10px }
+  .tier-head strong { font-weight:600 }
+  .tier-head span { color:var(--muted); font-size:13px }
+  .tier-body { display:none; grid-template-columns:140px 1fr; gap:14px; margin-top:14px }
+  .tier.on .tier-body { display:grid }
+  .price-wrap { position:relative }
+  .price-wrap span { position:absolute; left:12px; top:10px; color:var(--muted) }
+  .price-wrap input { padding-left:28px }
+
+  button.action {
+    background:var(--accent); color:#14110f; border:0; border-radius:8px;
+    padding:12px 22px; font:inherit; font-weight:600; cursor:pointer;
+  }
+  button.action[disabled] { opacity:.5; cursor:default }
+  button.ghost {
+    background:none; color:var(--muted); border:1px solid var(--line);
+    border-radius:7px; padding:7px 12px; font:inherit; font-size:13px; cursor:pointer;
+  }
+  button.ghost:hover { color:var(--ink) }
+  button.ghost.danger:hover { color:var(--warn); border-color:var(--warn) }
+
+  .bar { height:4px; background:var(--panel-2); border-radius:99px; overflow:hidden; margin-top:14px; display:none }
+  .bar.on { display:block }
+  .bar i { display:block; height:100%; background:var(--accent); width:0 }
+
+  .msg { padding:12px 14px; border-radius:8px; font-size:14px; margin-bottom:16px; display:none }
+  .msg.on { display:block }
+  .msg.ok { background:#1d2a20; color:var(--live); border:1px solid #2f4a36 }
+  .msg.bad { background:#2b1a17; color:var(--warn); border:1px solid #4a2b25 }
+
+  .item { display:flex; gap:14px; align-items:flex-start; border:1px solid var(--line);
+          border-radius:var(--radius); padding:14px; margin-bottom:10px; background:var(--panel) }
+  .item img { width:60px; height:60px; border-radius:7px; object-fit:cover; background:var(--panel-2); flex:none }
+  .item .meta { flex:1; min-width:0 }
+  .item h3 { margin:0 0 3px; font-size:15px; font-weight:600 }
+  .item p { margin:0; color:var(--muted); font-size:13px }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px }
+  .chip { font-size:12px; color:var(--muted); border:1px solid var(--line); border-radius:99px; padding:3px 9px }
+  .chip b { color:var(--ink); font-weight:600 }
+  .sold { color:var(--warn) }
+  .item .tools { display:flex; flex-direction:column; gap:6px; flex:none }
+
+  table { width:100%; border-collapse:collapse; font-size:14px }
+  th { text-align:left; color:var(--muted); font-weight:500; font-size:13px; padding:0 10px 10px 0; border-bottom:1px solid var(--line) }
+  td { padding:12px 10px 12px 0; border-bottom:1px solid var(--line); vertical-align:top }
+  .empty { color:var(--muted); padding:34px; text-align:center; border:1px dashed var(--line); border-radius:var(--radius) }
+  audio { width:100%; margin-top:10px }
+  @media (max-width:640px) { main, header, nav { padding-left:16px; padding-right:16px } .tier-body { grid-template-columns:1fr } }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Beat store</h1>
+  <span class="store" id="store"></span>
+</header>
+
+<nav role="tablist">
+  <button role="tab" aria-selected="true" data-tab="upload">Upload</button>
+  <button role="tab" aria-selected="false" data-tab="catalog">Catalogue</button>
+  <button role="tab" aria-selected="false" data-tab="sales">Sales</button>
+</nav>
+
+<main>
+  <div class="msg" id="msg"></div>
+
+  <!-- UPLOAD -->
+  <section id="tab-upload">
+    <h2>Add something to sell</h2>
+    <p class="sub">Fill this in and the product goes live in your store with a price for each licence.</p>
+
+    <form id="form">
+      <div class="panel">
+        <div class="grid" style="margin-bottom:14px">
+          <div>
+            <label for="kind">What is it</label>
+            <select id="kind" name="kind">
+              <option value="beat">Beat</option>
+              <option value="pack">Sample pack</option>
+            </select>
+          </div>
+          <div style="grid-column:span 2">
+            <label for="title">Title</label>
+            <input type="text" id="title" name="title" placeholder="Night Shift" required>
+          </div>
+        </div>
+
+        <div class="grid beat-only" style="margin-bottom:14px">
+          <div><label for="bpm">BPM</label><input type="number" id="bpm" name="bpm" min="40" max="300" placeholder="140"></div>
+          <div><label for="music_key">Key</label><input type="text" id="music_key" name="music_key" placeholder="F# minor"></div>
+          <div><label for="genre">Genre</label><input type="text" id="genre" name="genre" placeholder="Amapiano"></div>
+        </div>
+
+        <div style="margin-bottom:14px">
+          <label for="tags">Tags, comma separated</label>
+          <input type="text" id="tags" name="tags" placeholder="dark, 808, type beat">
+        </div>
+
+        <div>
+          <label for="description">Description</label>
+          <textarea id="description" name="description" placeholder="What it sounds like and who it suits."></textarea>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="grid">
+          <div>
+            <label for="artwork">Cover art (JPG or PNG, square)</label>
+            <input type="file" id="artwork" name="artwork" accept="image/*">
+          </div>
+          <div>
+            <label for="preview">Tagged preview (MP3, plays on the product page)</label>
+            <input type="file" id="preview" name="preview" accept="audio/*">
+          </div>
+        </div>
+      </div>
+
+      <h2>Licences and prices</h2>
+      <p class="sub">Tick each licence you want to sell, set the price, and attach the files that buyer gets.</p>
+      <div id="tiers"></div>
+
+      <div class="bar" id="bar"><i></i></div>
+      <p style="margin-top:18px">
+        <button type="submit" class="action" id="submit">Publish to my store</button>
+      </p>
+    </form>
+  </section>
+
+  <!-- CATALOG -->
+  <section id="tab-catalog" hidden>
+    <h2>Catalogue</h2>
+    <p class="sub">Everything you've published through this app.</p>
+    <div id="catalog"></div>
+  </section>
+
+  <!-- SALES -->
+  <section id="tab-sales" hidden>
+    <h2>Sales and licences</h2>
+    <p class="sub">Every licence issued, with the buyer's download link.</p>
+    <div id="sales"></div>
+  </section>
+</main>
+
+<script>
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+let TIERS = [];
+
+function flash(text, kind = 'ok') {
+  const el = $('#msg');
+  el.textContent = text;
+  el.className = `msg on ${kind}`;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (kind === 'ok') setTimeout(() => el.classList.remove('on'), 9000);
+}
+
+/* tabs */
+$$('nav button').forEach((btn) => {
+  btn.onclick = () => {
+    $$('nav button').forEach((b) => b.setAttribute('aria-selected', String(b === btn)));
+    $$('main section').forEach((s) => (s.hidden = s.id !== `tab-${btn.dataset.tab}`));
+    if (btn.dataset.tab === 'catalog') loadCatalog();
+    if (btn.dataset.tab === 'sales') loadSales();
+  };
+});
+
+/* tier rows */
+function renderTiers() {
+  const kind = $('#kind').value;
+  $('#tiers').innerHTML = TIERS.filter((t) => t.kind === kind)
+    .map(
+      (t) => `
+      <div class="tier" data-tier="${t.key}">
+        <div class="tier-head">
+          <input type="checkbox" id="on_${t.key}">
+          <label for="on_${t.key}" style="margin:0;color:var(--ink);cursor:pointer">
+            <strong>${t.name}</strong>
+          </label>
+          <span>${t.blurb}</span>
+        </div>
+        <div class="tier-body">
+          <div>
+            <label for="price_${t.key}">Price</label>
+            <div class="price-wrap"><span>$</span><input type="number" step="0.01" min="0" id="price_${t.key}" placeholder="29.99"></div>
+          </div>
+          <div>
+            <label for="file_${t.key}">File for this licence &mdash; ${t.files}</label>
+            <input type="file" id="file_${t.key}">
+          </div>
+        </div>
+      </div>`,
+    )
+    .join('');
+
+  $$('.tier input[type=checkbox]').forEach((cb) => {
+    cb.onchange = () => cb.closest('.tier').classList.toggle('on', cb.checked);
+  });
+}
+
+$('#kind').onchange = () => {
+  const isBeat = $('#kind').value === 'beat';
+  $$('.beat-only').forEach((el) => (el.style.display = isBeat ? '' : 'none'));
+  renderTiers();
+};
+
+/* submit with progress, because these files are big */
+$('#form').onsubmit = (e) => {
+  e.preventDefault();
+  const fd = new FormData();
+  const prices = {};
+
+  fd.append('kind', $('#kind').value);
+  for (const f of ['title', 'bpm', 'music_key', 'genre', 'tags', 'description']) {
+    fd.append(f, $('#' + f).value || '');
+  }
+  for (const f of ['artwork', 'preview']) {
+    if ($('#' + f).files[0]) fd.append(f, $('#' + f).files[0]);
+  }
+
+  let count = 0;
+  for (const t of TIERS) {
+    if (!$('#on_' + t.key)?.checked) continue;
+    const price = $('#price_' + t.key).value;
+    const file = $('#file_' + t.key).files[0];
+    if (!price || !file) return flash(`${t.name} needs both a price and a file.`, 'bad');
+    prices[t.key] = price;
+    fd.append('file_' + t.key, file);
+    count++;
+  }
+  if (!count) return flash('Tick at least one licence to sell.', 'bad');
+  fd.append('prices', JSON.stringify(prices));
+
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/products');
+  $('#submit').disabled = true;
+  $('#submit').textContent = 'Uploading…';
+  $('#bar').classList.add('on');
+
+  xhr.upload.onprogress = (ev) => {
+    if (ev.lengthComputable) $('#bar i').style.width = `${(ev.loaded / ev.total) * 100}%`;
+  };
+  xhr.onload = () => {
+    $('#submit').disabled = false;
+    $('#submit').textContent = 'Publish to my store';
+    $('#bar').classList.remove('on');
+    $('#bar i').style.width = '0';
+    let data = {};
+    try { data = JSON.parse(xhr.responseText); } catch {}
+    if (xhr.status === 200) {
+      flash('Published. It is live in your store now.');
+      $('#form').reset();
+      renderTiers();
+    } else {
+      flash(data.error || 'Upload failed. Check the server logs.', 'bad');
+    }
+  };
+  xhr.onerror = () => {
+    $('#submit').disabled = false;
+    $('#submit').textContent = 'Publish to my store';
+    $('#bar').classList.remove('on');
+    flash('Connection dropped during upload. Try again.', 'bad');
+  };
+  xhr.send(fd);
+};
+
+/* catalogue */
+async function loadCatalog() {
+  const items = await fetch('/api/catalog').then((r) => r.json());
+  if (!items.length) {
+    $('#catalog').innerHTML = '<div class="empty">Nothing published yet. Head to Upload to add your first beat.</div>';
+    return;
+  }
+  $('#catalog').innerHTML = items
+    .map((p) => {
+      const specs = [p.bpm ? p.bpm + ' BPM' : null, p.music_key, p.genre].filter(Boolean).join(' · ');
+      const sold = p.status === 'sold_exclusive';
+      return `
+      <div class="item">
+        <img src="${p.artwork ? '/media/' + p.artwork : ''}" alt="">
+        <div class="meta">
+          <h3>${escapeHtml(p.title)} ${sold ? '<span class="sold">· sold exclusively</span>' : ''}</h3>
+          <p>${escapeHtml(specs || (p.kind === 'pack' ? 'Sample pack' : 'Beat'))}</p>
+          <div class="chips">${p.tiers.map((t) => `<span class="chip">${t.name} <b>$${t.price}</b></span>`).join('')}</div>
+          ${p.preview ? `<audio controls preload="none" src="/media/${p.preview}"></audio>` : ''}
+        </div>
+        <div class="tools">
+          ${p.admin_url ? `<a class="ghost" style="text-decoration:none;text-align:center" href="${p.admin_url}" target="_blank" rel="noopener">Open in Shopify</a>` : ''}
+          <button class="ghost danger" data-del="${p.id}">Delete</button>
+        </div>
+      </div>`;
+    })
+    .join('');
+
+  $$('[data-del]').forEach((btn) => {
+    btn.onclick = async () => {
+      if (!confirm('Delete this from the app and from your Shopify store?')) return;
+      const res = await fetch('/api/products/' + btn.dataset.del, { method: 'DELETE' });
+      if (res.ok) { flash('Deleted.'); loadCatalog(); }
+      else flash('Could not delete it.', 'bad');
+    };
+  });
+}
+
+/* sales */
+async function loadSales() {
+  const rows = await fetch('/api/licenses').then((r) => r.json());
+  if (!rows.length) {
+    $('#sales').innerHTML = '<div class="empty">No sales yet. Licences appear here the moment an order is paid.</div>';
+    return;
+  }
+  $('#sales').innerHTML = `
+    <table>
+      <thead><tr><th>Date</th><th>Item</th><th>Buyer</th><th>Licence</th><th>Downloads</th><th></th></tr></thead>
+      <tbody>${rows
+        .map(
+          (l) => `<tr>
+            <td>${l.created_at.slice(0, 10)}<br><span style="color:var(--muted)">#${escapeHtml(l.order_number || '')}</span></td>
+            <td>${escapeHtml(l.title)}<br><span style="color:var(--muted)">${escapeHtml(l.tier)}</span></td>
+            <td>${escapeHtml(l.buyer_name || '—')}<br><span style="color:var(--muted)">${escapeHtml(l.buyer_email || '')}</span></td>
+            <td>${escapeHtml(l.license_code)}</td>
+            <td>${l.downloads}</td>
+            <td style="white-space:nowrap">
+              <button class="ghost" data-copy="${l.link}">Copy link</button>
+              <button class="ghost" data-resend="${l.id}">Resend</button>
+            </td>
+          </tr>`,
+        )
+        .join('')}</tbody>
+    </table>`;
+
+  $$('[data-copy]').forEach((b) => (b.onclick = () => {
+    navigator.clipboard.writeText(b.dataset.copy);
+    flash('Download link copied.');
+  }));
+  $$('[data-resend]').forEach((b) => (b.onclick = async () => {
+    const r = await fetch(`/api/licenses/${b.dataset.resend}/resend`, { method: 'POST' }).then((r) => r.json());
+    flash(r.emailed ? 'Email sent.' : 'Email is not set up yet — use Copy link and send it yourself.', r.emailed ? 'ok' : 'bad');
+  }));
+}
+
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+/* boot */
+(async () => {
+  const [settings, tiers] = await Promise.all([
+    fetch('/api/settings').then((r) => r.json()),
+    fetch('/api/tiers').then((r) => r.json()),
+  ]);
+  $('#store').textContent = settings.shop;
+  TIERS = tiers;
+  renderTiers();
+  if (!settings.mailConfigured) {
+    flash('Delivery email is not set up yet. Sales still work — grab the download link from the Sales tab and send it to the buyer.', 'bad');
+  }
+})();
+</script>
+</body>
+</html>
