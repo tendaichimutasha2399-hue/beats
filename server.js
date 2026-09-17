@@ -63,6 +63,7 @@ app.get('/', (req, res) => {
   if (req.signedCookies.shop) return res.redirect('/admin');
   res.type('html').send(`<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>Connect your store</title>
+<script>if (window.top !== window.self) { window.top.location.href = window.self.location.href; }</script>
 <style>body{font:16px/1.5 system-ui,sans-serif;background:#14110f;color:#ede6df;display:grid;place-items:center;
 height:100vh;margin:0;padding:20px}form{max-width:380px;width:100%}h1{font-size:24px;margin:0 0 6px}
 p{color:#9a8f86;margin:0 0 20px}input,button{width:100%;padding:12px 14px;border-radius:8px;font:inherit;border:1px solid #3a322c}

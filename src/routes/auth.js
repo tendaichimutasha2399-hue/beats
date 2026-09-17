@@ -24,7 +24,16 @@ router.get('/', (req, res) => {
     sameSite: 'lax',
     maxAge: 10 * 60 * 1000,
   });
-  res.redirect(buildAuthUrl(shop, state));
+  // Shopify sometimes opens this app inside a frame in the admin even when
+  // it's configured as non-embedded. accounts.shopify.com (the login page
+  // we're about to send the merchant to) refuses to render inside anyone
+  // else's frame, which shows up as "accounts.shopify.com is blocked" /
+  // ERR_BLOCKED_BY_RESPONSE. Breaking out to the top-level window first
+  // fixes it — and this script is a no-op when we're already top-level.
+  const authUrl = buildAuthUrl(shop, state);
+  res.type('html').send(`<!doctype html><html><head><script>
+    window.top.location.href = ${JSON.stringify(authUrl)};
+  </script></head><body>Redirecting to Shopify…</body></html>`);
 });
 
 // Step 2 — Shopify sends the merchant back with a code.
